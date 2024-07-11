@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-11 14:46:36
+LastEditTime: 2024-07-11 17:11:30
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -58,3 +58,20 @@ for b in range(batch_size):
         context = x_train[b, :t+1]
         target = y_train[b, t]
         print("when inputs are: {}, target is {}".format(list(context), target))
+
+config = {
+    'batch_size': batch_size,
+    'block_size': block_size
+}
+
+class ToyGPT:
+    def __init__(self, config):
+        self.config = config 
+        self.batch_size = config['batch_size']
+        self.block_size = config['block_size']
+    
+        self.model = [
+            
+        ]
+    
+    
