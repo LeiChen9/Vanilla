@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-09 23:28:44
+LastEditTime: 2024-07-11 14:39:47
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -12,6 +12,8 @@ import torch
 import pdb 
 with open("WestWorld.txt", 'r', encoding='utf-8') as f:
     text = f.read()
+
+device = '0' if torch.cuda.avaiable() else 'cpu'
 
 # Get all unique position of input
 chars = sorted(list(set(text)))
@@ -43,3 +45,8 @@ block_size = 8
 
 def get_batch(split):
     data = train_data if split == 'train' else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    x, y = x.to(device), y.to(device)
+    return x, y
