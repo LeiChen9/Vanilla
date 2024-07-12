@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-12 15:38:16
+LastEditTime: 2024-07-12 15:40:13
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -83,5 +83,7 @@ class ToyGPT:
             h = nn.ModuleList(Block(config) for _ in range(config['n_layer'])),
             ln_f = nn.LayerNorm(config['n_embed'])
         ))
+        
+        self.lm_head = nn.Linear(config['n_embed'], config['vocab_size'], bias=False)
     
     
