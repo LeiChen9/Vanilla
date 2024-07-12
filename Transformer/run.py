@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-13 02:01:00
+LastEditTime: 2024-07-13 02:06:58
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -11,6 +11,7 @@ Copyright (c) 2024 by Riceball, All Rights Reserved.
 import torch
 import pdb 
 import torch.nn as nn
+import math
 
 import torch.nn.functional as F
 with open("WestWorld.txt", 'r', encoding='utf-8') as f:
@@ -88,6 +89,7 @@ class MLP(nn.Module):
 class CausalSelfAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
+        assert config['n_embed'] % config['n_head'] == 0
         self.c_attn = nn.Linear(config['n_embed'], 3 * config['n_embed'])
         
         self.n_embed = config['n_embed']
@@ -101,6 +103,10 @@ class CausalSelfAttention(nn.Module):
         k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+        
+        # causal self-attn: (B, nh, T, hs) x (B, nh, hs, T) = (B, nh, T, T)
+        att = (q @ k.transpose(-2, -1)) * (1.0 * math.sqrt(k.size(-1)))
+        att = att.mask_fill
         
 
 class Block(nn.Module):
