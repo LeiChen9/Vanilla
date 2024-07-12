@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-13 01:04:44
+LastEditTime: 2024-07-13 01:19:11
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -12,6 +12,7 @@ import torch
 import pdb 
 import torch.nn as nn
 from torch.nn import Block
+import torch.nn.functional as F
 with open("WestWorld.txt", 'r', encoding='utf-8') as f:
     text = f.read()
 
@@ -86,6 +87,27 @@ class ToyGPT:
         
         self.lm_head = nn.Linear(config['n_embed'], config['vocab_size'], bias=False)
     
-    def forward(self):
-        pass
+    def forward(self, idx, targets=None):
+        device = idx.device
+        b, t = idx.size()
+        
+        assert t <= self.config['block_size'], f"Cannot forward sequence of length {t}, should be less than {self.config['block_size']}"
+        pos = torch.arange(0, t, dtype=torch.long, device=device).unsqueeze(0)
+        
+        # forward the GPT model itself
+        tok_emb = self.transformer.wte(idx)
+        pos_emb = self.transformer.wpe(pos)
+        x = self.transformer.dropout(tok_emb + pos_emb)
+        for block in self.transformer.h:
+            x = block(x)
+        x = self.transformer.ln_f(x)
+        logits = self.lm_head(x)
+        
+        # if we are given some desired targets
+        loss = None
+        if target is not None:
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=1)
+        
+        
+        
     
