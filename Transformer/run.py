@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-11 17:11:30
+LastEditTime: 2024-07-12 15:38:16
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -10,6 +10,8 @@ Copyright (c) 2024 by Riceball, All Rights Reserved.
 '''
 import torch
 import pdb 
+import torch.nn as nn
+from torch.nn import Block
 with open("WestWorld.txt", 'r', encoding='utf-8') as f:
     text = f.read()
 
@@ -61,7 +63,11 @@ for b in range(batch_size):
 
 config = {
     'batch_size': batch_size,
-    'block_size': block_size
+    'block_size': block_size,
+    'vocab_size': vocab_size,
+    'n_embed': 16,
+    'dropout': 0.3,
+    'n_layer': 10
 }
 
 class ToyGPT:
@@ -70,8 +76,12 @@ class ToyGPT:
         self.batch_size = config['batch_size']
         self.block_size = config['block_size']
     
-        self.model = [
-            
-        ]
+        self.transformer = nn.ModuleDict(dict(
+            wte=nn.Embedding(config['vocab_size'], config['n_embed']),
+            wpe=nn.Embedding(config['block_size'], config['n_embed']),
+            dropout=nn.Dropout(config['dropout']),
+            h = nn.ModuleList(Block(config) for _ in range(config['n_layer'])),
+            ln_f = nn.LayerNorm(config['n_embed'])
+        ))
     
     
