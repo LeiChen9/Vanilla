@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-13 01:19:11
+LastEditTime: 2024-07-13 01:35:05
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -11,7 +11,7 @@ Copyright (c) 2024 by Riceball, All Rights Reserved.
 import torch
 import pdb 
 import torch.nn as nn
-from torch.nn import Block
+
 import torch.nn.functional as F
 with open("WestWorld.txt", 'r', encoding='utf-8') as f:
     text = f.read()
@@ -71,6 +71,22 @@ config = {
     'n_layer': 10
 }
 
+class Block(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.ln_1 = nn.LayerNorm(config['n_embed'])
+        self.attn = CasualSelfAttention(config)
+        self.ln_2 = nn.LayerNorm(config['n_embed'])
+        self.mlp = MLP(config['n_embed'])
+    
+    def forward(self, x):
+        x = x + self.attn(self.ln_1(x))
+        x = x + self.mlp(x)
+        
+        return x
+        
+        
+        
 class ToyGPT:
     def __init__(self, config):
         self.config = config 
@@ -107,6 +123,8 @@ class ToyGPT:
         loss = None
         if target is not None:
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=1)
+        
+        return logits, loss
         
         
         
