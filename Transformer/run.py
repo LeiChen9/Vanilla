@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-13 02:06:58
+LastEditTime: 2024-07-13 06:22:52
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -91,6 +91,10 @@ class CausalSelfAttention(nn.Module):
         super().__init__()
         assert config['n_embed'] % config['n_head'] == 0
         self.c_attn = nn.Linear(config['n_embed'], 3 * config['n_embed'])
+        self.att_dropout = nn.Dropout(config['dropout'])
+        self.resid_dropout = nn.Dropout(config['dropout'])
+        self.register_buffer("bias", torch.tril(torch.ones(config['block_size'], config['block_size']))
+                                        .view(1, 1, config['block_size'], config['block_size']))
         
         self.n_embed = config['n_embed']
         self.n_head = config['n_head']
@@ -106,7 +110,14 @@ class CausalSelfAttention(nn.Module):
         
         # causal self-attn: (B, nh, T, hs) x (B, nh, hs, T) = (B, nh, T, T)
         att = (q @ k.transpose(-2, -1)) * (1.0 * math.sqrt(k.size(-1)))
-        att = att.mask_fill
+        att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
+        att = F.softmax(att, dim=-1)
+        att = self.att_dropout(att)
+        y = att @ v # (B, nh, T, T) x (B, nh, T, hs) = (B, nh, T, hs)
+        y = y.transpose(1, 2).contiguous().view(B, T, C)
+        
+        y = self.resid_dropout(y)
+        return y
         
 
 class Block(nn.Module):
