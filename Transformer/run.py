@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-13 01:35:05
+LastEditTime: 2024-07-13 01:42:08
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -71,6 +71,21 @@ config = {
     'n_layer': 10
 }
 
+class MLP(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.c_fc = nn.Linear(config['n_embed'], 4 * config['n_embed'])
+        self.c_proj = nn.Linear(4*config['n_embed'], config['n_embed'])
+        self.dropout = nn.Dropout(config['dropout'])
+    
+    def forward(self, x):
+        x = self.c_fc(x)
+        x = nn.GELU(x)
+        x = self.c_proj(x)
+        x = self.dropout(x)
+        return x
+        
+
 class Block(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -81,11 +96,9 @@ class Block(nn.Module):
     
     def forward(self, x):
         x = x + self.attn(self.ln_1(x))
-        x = x + self.mlp(x)
+        x = x + self.mlp(self.ln_2(x))
         
         return x
-        
-        
         
 class ToyGPT:
     def __init__(self, config):
