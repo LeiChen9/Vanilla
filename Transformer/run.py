@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-09 23:10:27
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-12 15:40:13
+LastEditTime: 2024-07-13 01:04:44
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/run.py
 Description: 
 
@@ -86,4 +86,6 @@ class ToyGPT:
         
         self.lm_head = nn.Linear(config['n_embed'], config['vocab_size'], bias=False)
     
+    def forward(self):
+        pass
     
