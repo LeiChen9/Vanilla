@@ -1,4 +1,6 @@
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 # open file
 with open("WestWorld.txt", "r", encoding='utf-8') as f:
@@ -31,8 +33,22 @@ batch_size = 4
 def get_batch(split):
     data = train_data if split == 'train' else val_data
     ix = torch.randint(len(data) - block_size, (batch_size,))
-    x = torch.stack(data[i:i+block_size] for i in ix)
-    y = torch.stack(data[i+1:i+block_size+1] for i in ix)
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
     return x, y
 
 xb, yb = get_batch('train')
+
+class BigramLM(nn.Module):
+    def __init__(self, vocab_size):
+        super().__init__()
+        self.token_emb = nn.Embedding(vocab_size, vocab_size)
+    
+    def forward(self, idx, targets):
+        logits = self.token_emb(idx)
+
+        return logits
+
+m = BigramLM(vocab_size)
+out = m(xb, yb)
+print(out.shape)
