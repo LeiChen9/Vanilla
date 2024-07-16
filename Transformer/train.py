@@ -47,8 +47,15 @@ class BigramLM(nn.Module):
     def forward(self, idx, targets):
         logits = self.token_emb(idx)
 
-        return logits
+        B, T, C = logits.shape
+        logits = logits.view(B*T, C)
+        targets = targets.view(B*T)
+
+        loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
 
 m = BigramLM(vocab_size)
-out = m(xb, yb)
+out, loss = m(xb, yb)
 print(out.shape)
+print(loss)
