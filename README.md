@@ -12,3 +12,5 @@
 Coding from scratch for the learning and understanding of algorithms.
 
 Connection test
+
+hello from pc-ubuntu
