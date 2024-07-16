@@ -44,14 +44,16 @@ class BigramLM(nn.Module):
         super().__init__()
         self.token_emb = nn.Embedding(vocab_size, vocab_size)
     
-    def forward(self, idx, targets):
+    def forward(self, idx, targets=None):
         logits = self.token_emb(idx)
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
 
-        B, T, C = logits.shape
-        logits = logits.view(B*T, C)
-        targets = targets.view(B*T)
-
-        loss = F.cross_entropy(logits, targets)
+            loss = F.cross_entropy(logits, targets)
 
         return logits, loss
     
@@ -68,3 +70,6 @@ m = BigramLM(vocab_size)
 out, loss = m(xb, yb)
 print(out.shape)
 print(loss)
+
+idx = torch.zeros((1, 1), dtype=torch.long)
+print(decode(m.gen(idx, 100)[0].tolist()))
