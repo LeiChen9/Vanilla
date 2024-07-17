@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-17 10:29:34
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-17 11:24:48
+LastEditTime: 2024-07-17 14:37:15
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/gpt.py
 Description: 
 
@@ -66,7 +66,7 @@ def get_batch(split):
 xb, yb = get_batch('train')
 
 class Head(nn.Module):
-    def __init__(self):
+    def __init__(self, head_size):
         super().__init__()
         self.query = nn.Linear(n_embed, head_size, bias=False)
         self.key = nn.Linear(n_embed, head_size, bias=False)
@@ -90,8 +90,23 @@ class Head(nn.Module):
         return out
 
 class MultiHead(nn.Module):
-    pass 
-        
+    def __init__(self):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(head_size) for _ in range(n_head)]) 
+    
+    def forward(self, x):
+        return torch.cat([h(x) for h in self.heads], dim=-1)
+
+class FeedForward(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(n_embed, n_embed),
+            nn.ReLU()
+        )
+    
+    def forward(self, x):
+        return self.net(x)
 
 model = BigramLM(vocab_size).to(device)
 out, loss = model(xb, yb)
