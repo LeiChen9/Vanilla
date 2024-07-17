@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-17 10:29:34
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-17 14:37:15
+LastEditTime: 2024-07-17 14:55:55
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/gpt.py
 Description: 
 
@@ -22,8 +22,7 @@ learning_rate = 1e-2
 device = 'cuda' if torch.cuda.is_available() else "cpu"
 eval_iters = 200
 n_embed = 32
-head_size = 16
-n_head = 3
+n_head = 4
 dropout = 0.3
 
 torch.manual_seed(3)
@@ -90,23 +89,51 @@ class Head(nn.Module):
         return out
 
 class MultiHead(nn.Module):
-    def __init__(self):
+    def __init__(self, head_size):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size) for _ in range(n_head)]) 
+        self.ln_proj = nn.Linear(n_embed, n_embed)
     
     def forward(self, x):
-        return torch.cat([h(x) for h in self.heads], dim=-1)
+        x = torch.cat([h(x) for h in self.heads], dim=-1)
+        return self.ln_proj(x)
 
 class FeedForward(nn.Module):
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(n_embed, n_embed),
-            nn.ReLU()
+            nn.Linear(n_embed, 4 * n_embed),
+            nn.ReLU(),
+            nn.Linear(4 * n_embed, n_embed)
         )
     
     def forward(self, x):
         return self.net(x)
+
+class LayerNorm1d:
+    def __init__(self, dim, eps=1e-5):
+        self.eps = eps 
+        self.gamma = torch.ones(dim)
+        self.beta = torch.zeros(dim)
+    
+    def __call__(self, x):
+        xmean = x.mean(1, keepdim=True)
+        xvar = x.var(1, keepdim=True)
+        xhat = (x - xmean) / torch.sqrt(xvar + self.eps) # normalize to unit variance
+        self.out = self.gamma * xmean + self.beta 
+        return self.out
+
+class Block(nn.Module):
+    def __init__(self):
+        super().__init__()
+        head_size = n_embed // n_head
+        self.multi_heads = MultiHead(head_size)
+        self.ffn = FeedForward()
+    
+    def forward(self, x):
+        x = x + self.multi_heads(x)
+        out = x + self.ffn(x)
+        return out
 
 model = BigramLM(vocab_size).to(device)
 out, loss = model(xb, yb)
