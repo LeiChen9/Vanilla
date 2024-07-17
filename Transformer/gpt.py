@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-17 10:29:34
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-17 14:55:55
+LastEditTime: 2024-07-17 14:58:20
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/gpt.py
 Description: 
 
@@ -129,10 +129,12 @@ class Block(nn.Module):
         head_size = n_embed // n_head
         self.multi_heads = MultiHead(head_size)
         self.ffn = FeedForward()
+        self.ln1 = nn.LayerNorm(n_embed)
+        self.ln2 = nn.LayerNorm(n_embed)
     
     def forward(self, x):
-        x = x + self.multi_heads(x)
-        out = x + self.ffn(x)
+        x = x + self.multi_heads(self.ln1(x))
+        out = x + self.ffn(self.ln2(x))
         return out
 
 model = BigramLM(vocab_size).to(device)
