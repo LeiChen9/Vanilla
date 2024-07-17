@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-17 10:29:34
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-17 15:00:33
+LastEditTime: 2024-07-17 15:04:05
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/gpt.py
 Description: 
 
@@ -14,16 +14,17 @@ import torch.nn.functional as F
 from bigram import BigramLM
 
 # define hyper params
-batch_size = 32
-block_size = 8
-max_iters = 3000
-eval_interval = 300
-learning_rate = 1e-2
+batch_size = 64
+block_size = 256
+max_iters = 5000
+eval_interval = 500
+learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else "cpu"
 eval_iters = 200
-n_embed = 32
-n_head = 4
-dropout = 0.3
+n_embed = 384
+n_head = 6
+n_layer = 5
+dropout = 0.2
 
 torch.manual_seed(3)
 
