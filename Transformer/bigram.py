@@ -10,6 +10,7 @@ eval_interval = 300
 learning_rate = 1e-2
 device = 'cuda' if torch.cuda.is_available() else "cpu"
 eval_iters = 200
+n_emb = 32
 
 torch.manual_seed(3)
 
@@ -51,12 +52,20 @@ def get_batch(split):
 xb, yb = get_batch('train')
 
 class BigramLM(nn.Module):
-    def __init__(self, vocab_size):
+    def __init__(self):
         super().__init__()
-        self.token_emb = nn.Embedding(vocab_size, vocab_size)
+        self.token_emb = nn.Embedding(vocab_size, n_emb)
+        self.pos_emb = nn.Embedding(block_size, n_emb)
+        self.lm_head = nn.Linear(n_emb, vocab_size)
     
     def forward(self, idx, targets=None):
-        logits = self.token_emb(idx)
+        B, T = idx.shape 
+        
+        token_embed = self.token_emb(idx)
+        pos_emb = self.pos_emb(torch.arange(T, device=device))
+        x = token_embed + pos_emb
+        
+        logits = self.lm_head(x)
         if targets is None:
             loss = None
         else:
