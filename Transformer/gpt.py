@@ -181,7 +181,7 @@ class DemoGPT(nn.Module):
             idx = torch.cat((idx, next_idx), dim=1)
         return idx
 
-model = BigramLM(vocab_size).to(device)
+model = DemoGPT(vocab_size).to(device)
 out, loss = model(xb, yb)
 print(out.shape)
 print(loss)
