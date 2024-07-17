@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-17 10:29:34
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-17 14:58:20
+LastEditTime: 2024-07-17 15:00:33
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/gpt.py
 Description: 
 
@@ -93,10 +93,13 @@ class MultiHead(nn.Module):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size) for _ in range(n_head)]) 
         self.ln_proj = nn.Linear(n_embed, n_embed)
+        self.dropout = nn.Dropout(dropout)
     
     def forward(self, x):
         x = torch.cat([h(x) for h in self.heads], dim=-1)
-        return self.ln_proj(x)
+        x = self.ln_proj(x)
+        out = self.dropout(x)
+        return out
 
 class FeedForward(nn.Module):
     def __init__(self):
@@ -104,7 +107,8 @@ class FeedForward(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(n_embed, 4 * n_embed),
             nn.ReLU(),
-            nn.Linear(4 * n_embed, n_embed)
+            nn.Linear(4 * n_embed, n_embed),
+            nn.Dropout(dropout)
         )
     
     def forward(self, x):
