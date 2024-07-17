@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-17 10:29:34
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-17 10:44:09
+LastEditTime: 2024-07-17 11:24:48
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/gpt.py
 Description: 
 
@@ -86,8 +86,11 @@ class Head(nn.Module):
         wei = wei.masked_fill(self.trill[:T, :T]==0, float('-inf'))
         wei = F.softmax(wei, dim=-1) # (B, T, T)
         wei = self.dropout(wei)
-        out = wei @ v 
+        out = wei @ v # (B, T, T) @ (B, T, C) -> (B, T, C)
         return out
+
+class MultiHead(nn.Module):
+    pass 
         
 
 model = BigramLM(vocab_size).to(device)
