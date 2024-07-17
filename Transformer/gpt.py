@@ -2,7 +2,7 @@
 Author: LeiChen9 chenlei9691@gmail.com
 Date: 2024-07-17 10:29:34
 LastEditors: LeiChen9 chenlei9691@gmail.com
-LastEditTime: 2024-07-17 15:04:05
+LastEditTime: 2024-07-17 15:26:45
 FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/gpt.py
 Description: 
 
@@ -141,6 +141,45 @@ class Block(nn.Module):
         x = x + self.multi_heads(self.ln1(x))
         out = x + self.ffn(self.ln2(x))
         return out
+
+class DemoGPT(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.token_emb = nn.Embedding(vocab_size, n_embed)
+        self.pos_embed = nn.Embedding(block_size, n_embed)
+        self.blocks = nn.Sequential([Block() for _ in range(n_layer)])
+        self.ln_f = nn.LayerNorm(n_embed)
+        self.lm_head = nn.Linear(n_embed, vocab_size)
+    
+    def forward(self, idx, target=None):
+        B, T = idx.shape
+        
+        token_emb = self.token_emb(idx)
+        pos_emb = self.pos_embed(torch.arange(T, device=device))
+        x = token_emb + pos_emb
+        x = self.blocks(x)
+        x = self.ln_f(x)
+        logits = self.lm_head(x)
+        
+        if target is None:
+            loss = None 
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = target.view(B*T)
+            
+            loss = F.cross_entropy(logits, targets)
+        return logits, loss 
+
+    def gen(self, idx, max_tokens):
+        for _ in range(max_tokens):
+            idx_cond = idx[:, -block_size:]
+            logits, loss = model(idx_cond)
+            logits = logits[:, -1, :]
+            probs = F.softmax(logits, dim=-1)
+            next_idx = torch.multinomial(probs, num_samples=1)
+            idx = torch.cat((idx, next_idx), dim=1)
+        return idx
 
 model = BigramLM(vocab_size).to(device)
 out, loss = model(xb, yb)
