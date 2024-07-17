@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from bigram import BigramLM
 
 # define hyper params
 batch_size = 32
@@ -11,7 +10,6 @@ eval_interval = 300
 learning_rate = 1e-2
 device = 'cuda' if torch.cuda.is_available() else "cpu"
 eval_iters = 200
-n_head = 3
 
 torch.manual_seed(3)
 
@@ -51,6 +49,33 @@ def get_batch(split):
     return x.to(device), y.to(device)
 
 xb, yb = get_batch('train')
+
+class BigramLM(nn.Module):
+    def __init__(self, vocab_size):
+        super().__init__()
+        self.token_emb = nn.Embedding(vocab_size, vocab_size)
+    
+    def forward(self, idx, targets=None):
+        logits = self.token_emb(idx)
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
+
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
+    
+    def gen(self, idx, max_new_tokens):
+        for _ in range(max_new_tokens):
+            logits, loss = self(idx)
+            logits = logits[:, -1, :]
+            probs = F.softmax(logits, dim=-1)
+            idx_next = torch.multinomial(probs, num_samples=1)
+            idx = torch.cat((idx, idx_next), dim=1)
+        return idx
 
 model = BigramLM(vocab_size).to(device)
 out, loss = model(xb, yb)
