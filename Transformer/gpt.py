@@ -1,3 +1,13 @@
+'''
+Author: LeiChen9 chenlei9691@gmail.com
+Date: 2024-07-17 10:29:34
+LastEditors: LeiChen9 chenlei9691@gmail.com
+LastEditTime: 2024-07-17 10:44:09
+FilePath: /SpeechDepDiag/Users/lei/Documents/Code/Vanilla/Transformer/gpt.py
+Description: 
+
+Copyright (c) 2024 by Riceball, All Rights Reserved. 
+'''
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,7 +21,10 @@ eval_interval = 300
 learning_rate = 1e-2
 device = 'cuda' if torch.cuda.is_available() else "cpu"
 eval_iters = 200
+n_embed = 32
+head_size = 16
 n_head = 3
+dropout = 0.3
 
 torch.manual_seed(3)
 
@@ -51,6 +64,31 @@ def get_batch(split):
     return x.to(device), y.to(device)
 
 xb, yb = get_batch('train')
+
+class Head(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.query = nn.Linear(n_embed, head_size, bias=False)
+        self.key = nn.Linear(n_embed, head_size, bias=False)
+        self.value = nn.Linear(n_embed, head_size, bias=False)
+        
+        self.register_buffer("trill", torch.trill(torch.ones(block_size, block_size)))
+        self.dropout = nn.Dropout(dropout)
+    
+    def forward(self, x):
+        B, T, C = x.shape
+        q = self.query(x)
+        k = self.key(x)
+        v = self.value(x)
+        
+        # self-att: softmax(q @ k.t / sqrt(d)) * v 
+        wei = q @ k.transpose(-2, -1) * C**-0.5
+        wei = wei.masked_fill(self.trill[:T, :T]==0, float('-inf'))
+        wei = F.softmax(wei, dim=-1) # (B, T, T)
+        wei = self.dropout(wei)
+        out = wei @ v 
+        return out
+        
 
 model = BigramLM(vocab_size).to(device)
 out, loss = model(xb, yb)
