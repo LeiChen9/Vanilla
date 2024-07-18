@@ -10,23 +10,23 @@ Copyright (c) 2024 by Riceball, All Rights Reserved.
 '''
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from bigram import BigramLM
+from torch.nn import functional as F
 
-# define hyper params
-batch_size = 64
-block_size = 256
+# hyperparameters
+batch_size = 64 # how many independent sequences will we process in parallel?
+block_size = 256 # what is the maximum context length for predictions?
 max_iters = 5000
 eval_interval = 500
 learning_rate = 3e-4
-device = 'cuda' if torch.cuda.is_available() else "cpu"
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embed = 384
 n_head = 6
-n_layer = 5
+n_layer = 6
 dropout = 0.2
+# ------------
 
-torch.manual_seed(3)
+torch.manual_seed(1337)
 
 # open file
 with open("WestWorld.txt", "r", encoding='utf-8') as f:
@@ -55,6 +55,20 @@ train_data, val_data = data[:n], data[n:]
 
 block_size = 8
 batch_size = 4
+
+@torch.no_grad()
+def estimate_loss():
+    out = {}
+    model.eval()
+    for split in ['train', 'val']:
+        losses = torch.zeros(eval_iters)
+        for k in range(eval_iters):
+            x, y = get_batch('split')
+            logits, loss = model(x, y)
+            losses[k] = loss.item()
+        out[split] = losses.mean()
+    model.train()
+    return out
 
 def get_batch(split):
     data = train_data if split == 'train' else val_data
@@ -181,39 +195,25 @@ class DemoGPT(nn.Module):
             idx = torch.cat((idx, next_idx), dim=1)
         return idx
 
-model = DemoGPT(vocab_size).to(device)
-out, loss = model(xb, yb)
-print(out.shape)
-print(loss)
-
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
-
-@torch.no_grad()
-def estimate_loss():
-    out = {}
-    model.eval()
-    for split in ['train', 'val']:
-        losses = torch.zeros(eval_iters)
-        for k in range(eval_iters):
-            x, y = get_batch('split')
-            logits, loss = model(x, y)
-            losses[k] = loss.item()
-        out[split] = losses.mean()
-    model.train()
-    return out
-
-for iter in range(max_iters):
-
-    if iter % eval_interval == 0:
-        losses = estimate_loss()
-        print(f"Step {iter}: train loss: {losses['train']:.4f}, val loss: {losses['val']:.4f}")
+if __name__ == '__main__':
+    model = DemoGPT()
+    model = model.to(device)
     
-    xb, yb = get_batch('train')
-
-    logits, loss = model(xb, yb)
-    optimizer.zero_grad(set_to_none=True)
-    loss.backward()
-    optimizer.step()
-
-idx = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decode(model.gen(idx, 100)[0].tolist()))
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    print(f"Training starts on device: {device}")
+    
+    for iter in range(max_iters):
+        if iter % eval_iters == 0:
+            losses = estimate_loss()
+            print(f"Step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        
+        xb, yb = get_batch('train')
+        logits, loss = model(xb, yb)
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+        
+    print("#" * 50)
+    print(f"Generation starts on device: {device}")
+    context = torch.zeros((1, 1), dtype=torch.long, device=device)
+    print(decode(model.gen(context, max_tokens=1000)[0].tolist()))
