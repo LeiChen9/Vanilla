@@ -86,7 +86,7 @@ class Head(nn.Module):
         self.key = nn.Linear(n_embed, head_size, bias=False)
         self.value = nn.Linear(n_embed, head_size, bias=False)
         
-        self.register_buffer("trill", torch.trill(torch.ones(block_size, block_size)))
+        self.register_buffer("trill", torch.tril(torch.ones(block_size, block_size)))
         self.dropout = nn.Dropout(dropout)
     
     def forward(self, x):
@@ -161,7 +161,7 @@ class DemoGPT(nn.Module):
         super().__init__()
         self.token_emb = nn.Embedding(vocab_size, n_embed)
         self.pos_embed = nn.Embedding(block_size, n_embed)
-        self.blocks = nn.Sequential([Block() for _ in range(n_layer)])
+        self.blocks = nn.Sequential(*[Block() for _ in range(n_layer)])
         self.ln_f = nn.LayerNorm(n_embed)
         self.lm_head = nn.Linear(n_embed, vocab_size)
     
